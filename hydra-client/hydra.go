@@ -2,7 +2,6 @@ package hydra_client
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -61,18 +60,4 @@ func createHydraApiClient() *client.APIClient {
 
 	apiClient := client.NewAPIClient(config)
 	return apiClient
-}
-
-func createHydraClientBody() []byte {
-	body := map[string]interface{}{
-		"client_id":                  "client123",
-		"client_secret":              "secret123",
-		"grant_types":                []string{"authorization_code"},
-		"redirect_uris":              []string{"http://localhost:51234/callback"},
-		"response_types":             []string{"code"},
-		"scope":                      "openid",
-		"token_endpoint_auth_method": "client_secret_basic",
-	}
-	b, _ := json.Marshal(body)
-	return b
 }
