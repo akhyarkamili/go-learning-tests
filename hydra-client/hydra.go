@@ -3,25 +3,54 @@ package hydra_client
 import (
 	"context"
 	"fmt"
-	"log"
+	hydra_client "learning-tests/hydra-client/hydra-client"
 	"net/http"
-	"time"
+	"net/http/cookiejar"
+	url "net/url"
 
 	client "github.com/ory/hydra-client-go"
 )
 
-func setupAuthentication() {
-	log.Fatalf("todo")
+func setupAuthentication(clientId string) error {
+	jar, _ := cookiejar.New(&cookiejar.Options{})
+	hc := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			fmt.Printf("redirecting to: %s\n", req.URL)
+			fmt.Printf("Cookie jar: %v\n", jar)
+			return nil
+		},
+		Jar: jar,
+	}
+
+	u := url.URL{Scheme: "http", Host: "127.0.0.1:4444", Path: "/oauth2/auth"}
+	var v = make(url.Values)
+	v.Add("response_type", "code")
+	v.Add("scope", "openid")
+	v.Add("state", "abcdefghijklkmn21341234")
+	v.Add("client_id", clientId)
+	v.Add("redirect_uri", "http://localhost:51234/callback")
+	u.RawQuery = v.Encode()
+	resp, err := hc.Get(u.String())
+	if err != nil {
+		return fmt.Errorf("failed to authenticate: %w", err)
+	}
+
+	if resp.StatusCode == 200 {
+		return nil
+	} else {
+		return fmt.Errorf("failed to authenticate: %d", resp.StatusCode)
+	}
+
 }
 
-func setupHydraClient(clientId string) error {
-	apiClient := createHydraApiClient()
+func setupOIDCClient(clientId, clientSecret string) error {
+	apiClient := hydra_client.CreateHydraApiClient("4445", nil)
 
 	req := apiClient.AdminApi.CreateOAuth2Client(context.Background())
 	oc := client.NewOAuth2ClientWithDefaults()
 	oc.SetClientId(clientId)
 	oc.SetClientName("client123")
-	oc.SetClientSecret("secret123")
+	oc.SetClientSecret(clientSecret)
 	oc.SetGrantTypes([]string{"authorization_code"})
 	oc.SetRedirectUris([]string{"http://localhost:51234/callback"})
 	oc.SetResponseTypes([]string{"code"})
@@ -37,27 +66,12 @@ func setupHydraClient(clientId string) error {
 	return nil
 }
 
-func destroyHydraClient(clientId string) error {
-	apiClient := createHydraApiClient()
+func destroyOIDCClient(clientId string) error {
+	apiClient := hydra_client.CreateHydraApiClient("4445", nil)
 	req := apiClient.AdminApi.DeleteOAuth2Client(context.Background(), clientId)
 	_, err := req.Execute()
 	if err != nil {
 		return fmt.Errorf("failed to delete hydra client: %v", err)
 	}
 	return nil
-}
-
-func createHydraApiClient() *client.APIClient {
-	config := client.NewConfiguration()
-	config.Servers = []client.ServerConfiguration{
-		{
-			URL: "http://localhost:4445",
-		},
-	}
-	config.HTTPClient = &http.Client{
-		Timeout: 1 * time.Second,
-	}
-
-	apiClient := client.NewAPIClient(config)
-	return apiClient
 }
