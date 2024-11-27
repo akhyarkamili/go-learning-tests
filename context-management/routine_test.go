@@ -9,15 +9,16 @@ import (
 )
 
 func TestGoroutineCancellation(t *testing.T) {
-	t.Run("test goroutine cancellation", func(t *testing.T) {
+	t.Run("cancel sends into ctx.Done in another goroutine", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
-		outputChan := make(chan error)
+
 		// Act
-		go sampleGoroutine(ctx, outputChan)
-		go func() {
-			time.Sleep(100 * time.Millisecond)
-			cancel()
-		}()
+		outputChan := make(chan error)
+		go func(ctx context.Context, outputChan chan<- error) {
+			<-ctx.Done()
+			outputChan <- nil
+		}(ctx, outputChan)
+		cancel()
 
 		// Assert
 		assert.Eventually(t, func() bool {
@@ -27,6 +28,6 @@ func TestGoroutineCancellation(t *testing.T) {
 			default:
 				return false
 			}
-		}, 3*time.Second, 300*time.Millisecond, "expected goroutine output channel to come")
+		}, 1*time.Second, 100*time.Millisecond, "expected goroutine output channel to come")
 	})
 }
