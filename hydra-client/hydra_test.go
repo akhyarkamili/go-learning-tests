@@ -39,10 +39,9 @@ func Test_setupAuthentication(t *testing.T) {
 			destroyOIDCClient(id)
 		})
 
-		ctx, cancel := context.WithCancel(context.Background())
-
 		authCode := make(chan string)
 		server := acceptor.NewHydraAuthFlowAcceptorServer(authCode)
+		ctx, cancel := context.WithCancel(context.Background())
 		go acceptor.Serve(ctx, acceptorPort, server)
 		t.Cleanup(func() {
 			cancel()

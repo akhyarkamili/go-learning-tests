@@ -39,7 +39,6 @@ func (h *HydraAuthFlowAcceptorServer) ServeHTTP(w http.ResponseWriter, r *http.R
 	hydraClient := api.CreateHydraApiClient("4445", nil)
 	switch r.URL.Path {
 	case "/login":
-		// parse query params
 		lc := r.URL.Query().Get("login_challenge")
 		req := hydraClient.AdminApi.AcceptLoginRequest(context.Background())
 		cr, _, err := req.LoginChallenge(lc).AcceptLoginRequest(client.AcceptLoginRequest{
@@ -56,7 +55,6 @@ func (h *HydraAuthFlowAcceptorServer) ServeHTTP(w http.ResponseWriter, r *http.R
 		w.Header().Set("Location", redirectUrl)
 		w.WriteHeader(302)
 	case "/consent":
-		// handle consent request
 		cc := r.URL.Query().Get("consent_challenge")
 		req := hydraClient.AdminApi.AcceptConsentRequest(context.Background())
 		cr, _, err := req.ConsentChallenge(cc).AcceptConsentRequest(client.AcceptConsentRequest{
@@ -69,7 +67,6 @@ func (h *HydraAuthFlowAcceptorServer) ServeHTTP(w http.ResponseWriter, r *http.R
 		}
 
 		redirectUrl := cr.GetRedirectTo()
-		// just return ok
 		w.Header().Set("Location", redirectUrl)
 		w.WriteHeader(302)
 		return
@@ -80,9 +77,8 @@ func (h *HydraAuthFlowAcceptorServer) ServeHTTP(w http.ResponseWriter, r *http.R
 		}()
 		w.WriteHeader(200)
 	default:
-		w.WriteHeader(200)
+		w.WriteHeader(404)
 		_, _ = w.Write([]byte("Not implemented"))
 		return
 	}
-
 }

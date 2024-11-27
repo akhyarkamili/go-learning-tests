@@ -18,11 +18,10 @@ func TestServe(t *testing.T) {
 			cancel()
 		})
 
-		// Assert
 		assert.Eventually(t, func() bool {
 			client := http.Client{}
-			res, err := client.Get("http://localhost:51233/test")
-			return assert.NoError(t, err) && assert.Equal(t, 200, res.StatusCode)
-		}, time.Second, 300*time.Millisecond, "expected status code 200")
+			res, err := client.Get("http://localhost:51233/")
+			return assert.NoError(t, err) && assert.Equal(t, 404, res.StatusCode)
+		}, time.Second, 300*time.Millisecond, "expected status code 404")
 	})
 }
