@@ -9,35 +9,47 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func newMssql(user, pass, host, dbname string) (*sqlx.DB, error) {
+	db, err := sqlx.Connect("sqlserver", fmt.Sprintf(
+		"sqlserver://%s:%s@%s?database=%s&encrypt=disable",
+		user, pass, host, dbname,
+	))
+	if err != nil {
+		return nil, fmt.Errorf("sql open: %w", err)
+	}
+
+	return db, nil
+}
+
 func Test_newMssql(t *testing.T) {
 	db, err := newMssql("sa", "yourStrong(!)Password", "localhost", "test")
 	if err != nil {
 		t.Fatalf("newMssql() error = %v", err)
 	}
 
-	db.db.MustExec("create schema s1")
-	db.db.MustExec(`
+	db.MustExec("create schema s1")
+	db.MustExec(`
 		create table s1.t1 (
 			id int primary key,
 			last_update datetime,
 		);`)
 	t.Cleanup(func() {
-		db.db.MustExec("drop table s1.t1")
-		db.db.MustExec("drop schema s1")
+		db.MustExec("drop table s1.t1")
+		db.MustExec("drop schema s1")
 	})
 
 	// insert works
-	db.db.MustExec("INSERT INTO s1.t1 (id, last_update) VALUES (1, '2000-01-01T15:04:05Z')")
+	db.MustExec("INSERT INTO s1.t1 (id, last_update) VALUES (1, '2000-01-01T15:04:05Z')")
 
 	assert.Equal(t,
 		[]rowData{
 			{"id": int64(1), "last_update": time.Date(2000, 1, 1, 15, 4, 5, 0, time.UTC)},
 		},
-		getAllData(t, db.db, "s1.t1", "id"),
+		getAllData(t, db, "s1.t1", "id"),
 	)
 
 	// update returning
-	rows, err := db.db.Queryx(`
+	rows, err := db.Queryx(`
 		UPDATE s1.t1 SET last_update = '2024-01-01T15:04:05Z' OUTPUT INSERTED.id as inserted_id, DELETED.id AS deleted_id, DELETED.last_update AS deleted_last_update, INSERTED.last_update AS inserted_last_update
 
 	`)
